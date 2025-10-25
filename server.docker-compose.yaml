@@ -1,5 +1,18 @@
 services:
 
+    watchtower: # https://github.com/containrrr/watchtower
+        container_name: watchtower
+        privileged: true
+        restart: unless-stopped
+        image: containrrr/watchtower
+        environment:
+            WATCHTOWER_CLEANUP: "true"
+            WATCHTOWER_POLL_INTERVAL: 7200
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+        # OUTDATED: https://github.com/containrrr/watchtower/issues/2067
+        # POSSIBLE ALTERNATIVE: https://github.com/mag37/dockcheck
+
     frpc: # https://github.com/fatedier/frp
         image: fatedier/frpc:v0.65.0
         container_name: frpc
@@ -7,6 +20,8 @@ services:
         volumes:
         - ./frpc.toml:/frpc.toml
         network_mode: host
+        labels:
+            - "com.centurylinklabs.watchtower.enable=false"
         command: "-c /frpc.toml"
 
     traefik: # https://github.com/traefik/traefik
