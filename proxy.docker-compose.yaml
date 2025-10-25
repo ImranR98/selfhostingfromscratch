@@ -1,0 +1,10 @@
+services:
+
+    frps: # https://github.com/fatedier/frp
+        image: fatedier/frps:v0.65.0
+        container_name: frps
+        restart: always
+        volumes:
+        - ./frps.toml:/frps.toml
+        network_mode: host
+        command: "-c /frps.toml"

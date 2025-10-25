@@ -1,0 +1,23 @@
+serverAddr = "137.220.35.151"
+serverPort = 7000
+auth.additionalScopes = ["HeartBeats", "NewWorkConns"]
+auth.method = "token"
+auth.token = "mysupersecrettoken"
+
+[[proxies]]
+name = "http"
+type = "tcp"
+localIP = "127.0.0.1"
+localPort = 80
+remotePort = 80
+transport.useEncryption = true
+transport.proxyProtocolVersion = "v2"
+
+[[proxies]]
+name = "https"
+type = "tcp"
+localIP = "127.0.0.1"
+localPort = 443
+remotePort = 443
+transport.useEncryption = true
+transport.proxyProtocolVersion = "v2"

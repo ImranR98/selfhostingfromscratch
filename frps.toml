@@ -1,0 +1,4 @@
+bindPort = 7000
+auth.additionalScopes = ["HeartBeats", "NewWorkConns"]
+auth.method = "token"
+auth.token = "mysupersecrettoken"
