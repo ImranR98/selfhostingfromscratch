@@ -1,0 +1,15 @@
+services:
+
+    filebrowser: # https://github.com/filebrowser/filebrowser
+        container_name: filebrowser
+        image: filebrowser/filebrowser
+        restart: unless-stopped
+        user: "1000:1000"
+        volumes:
+            - ./filebrowser_storage:/srv # Create first
+            - filebrowser_db:/database
+        ports:
+            - 8080:80
+
+volumes:
+  filebrowser_db:
