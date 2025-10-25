@@ -1,0 +1,4 @@
+filebrowser_storage
+authelia_config/db.sqlite3
+authelia_config/notification.txt
+crowdsec_dash_db
