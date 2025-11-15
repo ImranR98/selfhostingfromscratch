@@ -1,3 +1,9 @@
+x-logging: 
+    &logging
+    options:
+        max-size: 10m
+        max-file: 5
+
 services:
 
     watchtower: # https://github.com/Foxite/nicholas-fedor-watchtower
@@ -10,6 +16,7 @@ services:
             WATCHTOWER_POLL_INTERVAL: 7200
         volumes:
             - /var/run/docker.sock:/var/run/docker.sock
+        logging: *logging
         # Note: Original Watchtower unmaintained (https://github.com/containrrr/watchtower/issues/2067), this is a fork
 
     frpc: # https://github.com/fatedier/frp
@@ -22,6 +29,7 @@ services:
         labels:
             - "com.centurylinklabs.watchtower.enable=false"
         command: "-c /frpc.toml"
+        logging: *logging
 
     authelia: # https://github.com/authelia/authelia
         image: authelia/authelia
@@ -48,6 +56,7 @@ services:
         expose:
             - 9091
         restart: unless-stopped
+        logging: *logging
     authelia-db:
         image: redis:alpine
         container_name: authelia-db
@@ -59,6 +68,7 @@ services:
         expose:
             - 6379
         restart: unless-stopped
+        logging: *logging
 
     crowdsec: # https://github.com/crowdsecurity/crowdsec
         image: crowdsecurity/crowdsec:latest
@@ -76,6 +86,7 @@ services:
         networks:
             - traefik
         restart: unless-stopped
+        logging: *logging
     crowdsec-bouncer:
         image: docker.io/fbonalair/traefik-crowdsec-bouncer:latest
         container_name: crowdsec-bouncer
@@ -87,6 +98,7 @@ services:
         depends_on:
             - crowdsec
         restart: unless-stopped
+        logging: *logging
     crowdsec-dashboard:
         image: metabase/metabase # crowdsec@crowdsec.net !!Cr0wdS3c_M3t4b4s3??
         container_name: crowdsec-dashboard
@@ -109,6 +121,7 @@ services:
             - "traefik.http.routers.crowdsec-dashboard.tls=true"
             - "traefik.http.routers.crowdsec-dashboard.middlewares=authelia@docker,geoblock@file"
             - "traefik.http.services.crowdsec-dashboard.loadbalancer.server.port=3000"
+        logging: *logging
 
     traefik: # https://github.com/traefik/traefik
         image: traefik:latest
@@ -160,6 +173,7 @@ services:
         restart: unless-stopped
         networks:
             - traefik
+        logging: *logging
 
     filebrowser: # https://github.com/filebrowser/filebrowser
         container_name: filebrowser
@@ -181,6 +195,7 @@ services:
             - "traefik.http.services.filebrowser.loadbalancer.server.port=80"
             - "traefik.http.routers.filebrowser.tls.certresolver=le"
             - "traefik.http.routers.filebrowser.middlewares=authelia@docker"
+        logging: *logging
 
     ollama:
         image: ollama/ollama
@@ -191,6 +206,7 @@ services:
             - traefik
         tty: true
         restart: unless-stopped
+        logging: *logging
     ollama-webui:
         image: ghcr.io/open-webui/open-webui:main
         container_name: ollama-webui
@@ -224,6 +240,7 @@ services:
             - "traefik.http.routers.ollama-webui.tls=true"
             - "traefik.http.routers.ollama-webui.middlewares=authelia@docker,geoblock@file"
             - "traefik.http.services.ollama-webui.loadbalancer.server.port=8080"
+        logging: *logging
 
 volumes:
     filebrowser_db:
