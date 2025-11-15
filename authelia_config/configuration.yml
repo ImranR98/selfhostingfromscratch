@@ -43,3 +43,61 @@ storage:
 notifier:
   filesystem:
     filename: /config/notification.txt
+
+identity_providers:
+  oidc:
+    ## See: https://www.authelia.com/c/oidc
+    hmac_secret: 'U+2FTcapX1p8WWsGRZcVzZrPnQnfPXsWOWNWnESAyqU=' # openssl rand -base64 32
+    jwks: # openssl genrsa 2048
+      - key: |
+          -----BEGIN PRIVATE KEY-----
+          MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDW0Jjp5QA9lrkQ
+          PhNWId5eRZgC9ls2yRkPpF22i2OFMl/5sY5xCCxPNzLgYKKmQoSUEyOCHvgid4SI
+          xTTu7IqqHyLX9KbN/LLgSw06PGl51Md2ZblkIw7t7RAvLj9FxM3e7A0MXwb/WJLt
+          ooxrFbYwbZIEp7yzgIPx16FtK++5BkW7M+J0BxCy986O3v+VgAmYLJZBdbOSI/dT
+          jwn5EcTvJgyWQI6F0yY6vSwnAeticp2xNk/lsu/uEfQmgVMJBHBta2hJHtHYQiAB
+          AOPzMV/PrSqD0TD6WgxqYpxn8OOBRAPmjxg2lHOWgrUn1VTj/8hSNHo6crwFGrM9
+          ilpNymAnAgMBAAECggEAB+WM1tL2wneBymw7F2hQ/YPZwIjK4JrdjiV7gRmNqS3+
+          uOCYkmTRBYEgyykc7DdiGp67fZiNhELYKej0obCAsRv06B2+a1sV6PM0A3HeFL7y
+          2CeJfE9iSJ0gLQPVCp0J+Qm8ubmH5HzJO0LFnlgi0D6ZkWHofhbELZtA0WZok74V
+          10lquSOo6ui46N6CVeu60KTBjYEqHPdCmLZxaL1bMywgpPnaDjLi/H9rCqOwDDaf
+          JZ2rpM1OB6js1CVFHBhuAO/Zc7TPOWxwhy4TLxCp7V4KrW6J4Y5o9GQedpT69+nV
+          pu3tm9t18hrpV+xnipZdNfP2BcUL88ZkW4E6ectOSQKBgQD6Vvxp9dK0hrKXA5rB
+          48hrhSYzM1YX/73z9GutuB2riNdEeulVsETXexHqLuno0m1ODieK/26CalF4YmtK
+          XpAysWnqF0tAS5KmU+YE4/gaHg4DICIo+Jew5pqQPWOxtH55iWWbOfV237ve31Qx
+          ymN9Di/b2tGCtk4ZtLpz9tzdGQKBgQDbq/x1njOTI0tPkSMi/qktJnaPTYU3SIHv
+          d+SHki3t4f72voo91z6Xo2Dabfc+fIoQOiUA0Nfvh0x3MHGjkq7Q1MxEoXqQlg3t
+          t88D/OjwnG0MEMJ2ItiiuwwETJ03g4sgINCq96eiB/UZ9BbcwZnoKViVwnZysJxz
+          FDeYPEePPwKBgBo5HG25C15Psctx3DctNiRVKUA5w232Ix633sOuwqTiS7JnsaOB
+          OGTeBm1ihqwVxs9jWi8MPLY6jtgubxC2QSKeRPr5f693eyAjL7gZbTbHKS6Yohtq
+          lvE35r7vP08xGgJ/Kv6MnrLaEuLwv/ALREqoPskn7cRkdl/o95MIK/CZAoGAM90S
+          OO7F/Ho7wKhipFN9u8Q1/7Vsu1WqH9CtqvhvUZem67imyNz10TVom4mU8zLSIeyo
+          ad3k7Y+DFSzh1529Gl7zb0y0tEhJN5PLE4T1tkEoWc3nK58kiJ8iwi0YfU/YXBiD
+          S6o28MFyM9N2Rl6LKM4CNTF5Z7Cc72qZiZ7Jwl8CgYAbNhQ4yVHXHqJzIPutTV8I
+          TBU+mzBDavEF/du//EZPbtuTqqDTLknhSdp5iTiPXPJ94E/F6PWF0WL1PN43oa/4
+          qhabV+4IzLU1JhuVj/DhUtHLaQERBwnZx0GPljJWex07gSTG+kTndVuCGK+ic/K/
+          pah8ZiGEoowrQ5eHOIi2/g==
+          -----END PRIVATE KEY-----
+    enable_client_debug_messages: false
+    clients:
+      - client_id: 'open-webui'
+        client_name: 'Open WebUI' # docker run authelia/authelia:latest authelia crypto hash generate pbkdf2 --variant sha512 --random --random.length 72 --random.charset rfc3986
+        client_secret: '$pbkdf2-sha512$310000$lQb.leTfGeCRlWlbAU.F/w$rSnBWv1URTEBvdHtsRoqYzxzxzTqauYX4IYfxHWi4cXTUAEZFFnVJlxMM.zSRuTTC/FYtl6vdx1nro4qou6XiQ'
+        public: false
+        authorization_policy: 'two_factor'
+        require_pkce: false
+        pkce_challenge_method: ''
+        redirect_uris:
+          - 'https://gpt.imranr.cloud/oauth/oidc/callback'
+        scopes:
+          - 'openid'
+          - 'profile'
+          - 'groups'
+          - 'email'
+        response_types:
+          - 'code'
+        grant_types:
+          - 'authorization_code'
+        access_token_signed_response_alg: 'none'
+        userinfo_signed_response_alg: 'none'
+        token_endpoint_auth_method: 'client_secret_basic'

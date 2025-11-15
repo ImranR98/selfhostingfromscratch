@@ -182,12 +182,57 @@ services:
             - "traefik.http.routers.filebrowser.tls.certresolver=le"
             - "traefik.http.routers.filebrowser.middlewares=authelia@docker"
 
+    ollama:
+        image: ollama/ollama
+        container_name: ollama
+        volumes:
+            - ollama:/root/.ollama
+        networks:
+            - traefik
+        tty: true
+        restart: unless-stopped
+    ollama-webui:
+        image: ghcr.io/open-webui/open-webui:main
+        container_name: ollama-webui
+        environment:
+            - OLLAMA_BASE_URL=http://ollama:11434
+            - WEBUI_URL=https://gpt.imranr.cloud
+            - ENABLE_OAUTH_SIGNUP=true
+            - OAUTH_MERGE_ACCOUNTS_BY_EMAIL=true
+            - OAUTH_CLIENT_ID=open-webui
+            - OAUTH_CLIENT_SECRET=T9GGizmCpZCFp6mez~.kiB.1wxu~~VTi9m42IuqSC2q-xYlpsdlDPAd50~IMZGVQuInmgSkL # Corresponds to 'client_secret' in configuration.yml 
+            - OPENID_PROVIDER_URL=https://auth.imranr.cloud/.well-known/openid-configuration
+            - OAUTH_PROVIDER_NAME=Authelia
+            - OAUTH_SCOPES=openid email profile groups
+            - ENABLE_OAUTH_ROLE_MANAGEMENT=true
+            - OAUTH_ALLOWED_ROLES=admins,dev,family
+            - OAUTH_ADMIN_ROLES=admins
+            - OAUTH_ROLES_CLAIM=groups
+        volumes:
+            - ollama_webui:/app/backend/data
+        networks:
+            - traefik
+        depends_on:
+            - ollama
+            - traefik
+        restart: unless-stopped
+        labels:
+            - "traefik.enable=true"
+            - "traefik.http.routers.ollama-webui.rule=Host(`gpt.imranr.cloud`)"
+            - "traefik.http.routers.ollama-webui.entrypoints=websecure"
+            - "traefik.http.routers.ollama-webui.tls.certresolver=le"
+            - "traefik.http.routers.ollama-webui.tls=true"
+            - "traefik.http.routers.ollama-webui.middlewares=authelia@docker,geoblock@file"
+            - "traefik.http.services.ollama-webui.loadbalancer.server.port=8080"
+
 volumes:
     filebrowser_db:
     traefik_acme:
     authelia_db:
     crowdsec_db:
     traefik_access_logs:
+    ollama:
+    ollama_webui:
 
 networks:
     traefik:
