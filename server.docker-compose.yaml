@@ -60,6 +60,56 @@ services:
             - 6379
         restart: unless-stopped
 
+    crowdsec: # https://github.com/crowdsecurity/crowdsec
+        image: crowdsecurity/crowdsec:latest
+        container_name: crowdsec
+        environment:
+            GID: "${GID-1000}"
+            COLLECTIONS: "crowdsecurity/linux crowdsecurity/traefik"
+        depends_on:
+            - traefik
+        volumes:
+            - ./crowdsec_config/acquis.yaml:/etc/crowdsec/acquis.yaml:ro
+            - ./crowdsec_config/profiles.yaml:/etc/crowdsec/profiles.yaml:ro
+            - crowdsec_db:/var/lib/crowdsec/data/
+            - traefik_access_logs:/var/log/traefik/:ro
+        networks:
+            - traefik
+        restart: unless-stopped
+    crowdsec-bouncer:
+        image: docker.io/fbonalair/traefik-crowdsec-bouncer:latest
+        container_name: crowdsec-bouncer
+        environment:
+            CROWDSEC_BOUNCER_API_KEY: "yRoByFyKf8q/mRg/gedtxE4XqJn+QdTBcSRsGLVx9b8" # cscli bouncers add crowdsecBouncer
+            CROWDSEC_AGENT_HOST: crowdsec:8080
+        networks:
+            - traefik
+        depends_on:
+            - crowdsec
+        restart: unless-stopped
+    crowdsec-dashboard:
+        image: metabase/metabase # crowdsec@crowdsec.net !!Cr0wdS3c_M3t4b4s3??
+        container_name: crowdsec-dashboard
+        depends_on:
+            - crowdsec
+        restart: unless-stopped
+        environment:
+            MB_DB_FILE: /data/metabase.db
+            MGID: "${GID-1000}"
+        networks:
+            - traefik
+        volumes:
+            - ./crowdsec_dash_db:/data # Bootstrap dashboard DB from https://crowdsec-statics-assets.s3-eu-west-1.amazonaws.com/metabase_sqlite.zip
+            - crowdsec_db:/metabase-data/
+        labels:
+            - "traefik.enable=true"
+            - "traefik.http.routers.crowdsec-dashboard.rule=Host(`crowdsec.imranr.cloud`)"
+            - "traefik.http.routers.crowdsec-dashboard.entrypoints=websecure"
+            - "traefik.http.routers.crowdsec-dashboard.tls.certresolver=le"
+            - "traefik.http.routers.crowdsec-dashboard.tls=true"
+            - "traefik.http.routers.crowdsec-dashboard.middlewares=authelia@docker"
+            - "traefik.http.services.crowdsec-dashboard.loadbalancer.server.port=3000"
+
     traefik: # https://github.com/traefik/traefik
         image: traefik:latest
         container_name: traefik
@@ -85,12 +135,18 @@ services:
             - "--certificatesresolvers.le.acme.storage=./acme/acme.json"
             - "--certificatesresolvers.le.acme.tlschallenge=true"
             - "--entryPoints.websecure.proxyProtocol.trustedIPs=172.19.0.1/32"
+            - "--accesslog=true"
+            - "--accesslog.filePath=/var/log/traefik/access.log"
+            - "--providers.file.filename=/etc/traefik/dynamic-configuration.yaml"
+            - "--entryPoints.websecure.http.middlewares=crowdsec-bouncer@file"
         ports:
             - "80:80"
             - "443:443"
         volumes:
             - /var/run/docker.sock:/var/run/docker.sock
             - traefik_acme:/acme
+            - traefik_access_logs:/var/log/traefik/
+            - ./traefik_dynamic_config.yaml:/etc/traefik/dynamic-configuration.yaml:ro
         labels:
             - "traefik.enable=true"
             - "traefik.http.routers.api.rule=Host(`traefik.imranr.cloud`)"
@@ -128,6 +184,8 @@ volumes:
     filebrowser_db:
     traefik_acme:
     authelia_db:
+    crowdsec_db:
+    traefik_access_logs:
 
 networks:
     traefik:
