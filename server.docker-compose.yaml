@@ -6,6 +6,58 @@ x-logging:
 
 services:
 
+    dockerproxy: # https://github.com/wollomatic/socket-proxy for Traefik and other read-only needs
+        container_name: dockerproxy
+        image: wollomatic/socket-proxy:1
+        command:
+            - "-loglevel=debug"
+            - '-allowGET=(/v1\..{1,2})?/(version|containers/.*|events.*)'
+            - "-allowHEAD=/_ping"
+            - "-shutdowngracetime=5"
+            - "-watchdoginterval=600"
+            - "-stoponwatchdog"
+            - "-proxysocketendpoint=/socket/docker.sock"
+            - "-proxysocketendpointfilemode=0600"
+        restart: unless-stopped
+        read_only: true
+        mem_limit: 64M
+        cap_drop:
+            - ALL
+        security_opt:
+            - no-new-privileges
+        user: 65534:964 # replace 964 with the output of "grep docker /etc/group | awk -F: '{print $3}'"
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock:ro
+            - dockerproxy:/socket/
+        logging: *logging
+
+    dockerproxy_priv: # https://github.com/wollomatic/socket-proxy for Watchtower and other read-write needs
+        container_name: dockerproxy_priv
+        image: wollomatic/socket-proxy:1
+        command:
+            - "-loglevel=debug" # set to debug for far more logging
+            - '-allowGET=/v1\..{2}/(containers/.*|images/.*)'
+            - '-allowPOST=/v1\..{2}/(containers/.*|images/.*|networks/.*)'
+            - '-allowDELETE=/v1\..{2}/(containers/.*|images/.*)'
+            - "-allowHEAD=/_ping"
+            - "-shutdowngracetime=5"
+            - "-watchdoginterval=600"
+            - "-stoponwatchdog"
+            - "-proxysocketendpoint=/socket/docker.sock"
+            - "-proxysocketendpointfilemode=0600"
+        restart: unless-stopped
+        read_only: true
+        mem_limit: 64M
+        cap_drop:
+            - ALL
+        security_opt:
+            - no-new-privileges
+        user: 65534:964 # replace 964 with the output of "grep docker /etc/group | awk -F: '{print $3}'"
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock:ro
+            - dockerproxy_priv:/socket/
+        logging: *logging
+
     watchtower: # https://github.com/Foxite/nicholas-fedor-watchtower
         container_name: watchtower
         privileged: true
@@ -14,8 +66,11 @@ services:
         environment:
             WATCHTOWER_CLEANUP: "true"
             WATCHTOWER_POLL_INTERVAL: 7200
+            DOCKER_HOST: "unix:///socket/docker.sock"
         volumes:
-            - /var/run/docker.sock:/var/run/docker.sock
+            - dockerproxy_priv:/socket/:ro
+        depends_on:
+            - dockerproxy_priv
         logging: *logging
         # Note: Original Watchtower unmaintained (https://github.com/containrrr/watchtower/issues/2067), this is a fork
 
@@ -128,6 +183,7 @@ services:
         container_name: traefik
         depends_on:
             - authelia
+            - dockerproxy
         command:
             - "--api=true"
             - "--api.dashboard=true"
@@ -137,6 +193,7 @@ services:
             - "--log.level=DEBUG"
             - "--providers.docker=true"
             - "--providers.docker.exposedByDefault=false"
+            - "--providers.docker.endpoint=unix:///socket/docker.sock"
             - "--entryPoints.web=true"
             - "--entryPoints.web.address=:80"
             - "--entryPoints.web.http.redirections.entryPoint.to=websecure"
@@ -158,10 +215,10 @@ services:
             - "80:80"
             - "443:443"
         volumes:
-            - /var/run/docker.sock:/var/run/docker.sock
             - traefik_acme:/acme
             - traefik_access_logs:/var/log/traefik/
             - ./traefik_dynamic_config.yaml:/etc/traefik/dynamic-configuration.yaml:ro
+            - dockerproxy:/socket/:ro
         labels:
             - "traefik.enable=true"
             - "traefik.http.routers.api.rule=Host(`traefik.imranr.cloud`)"
@@ -250,6 +307,18 @@ volumes:
     traefik_access_logs:
     ollama:
     ollama_webui:
+    dockerproxy:
+        driver: local
+        driver_opts:
+            type: tmpfs
+            device: tmpfs
+            o: size=1k,uid=65534,gid=0,mode=0700,noexec
+    dockerproxy_priv:
+        driver: local
+        driver_opts:
+            type: tmpfs
+            device: tmpfs
+            o: size=1k,uid=65534,gid=0,mode=0700,noexec
 
 networks:
     traefik:
