@@ -107,7 +107,7 @@ services:
             - "traefik.http.routers.crowdsec-dashboard.entrypoints=websecure"
             - "traefik.http.routers.crowdsec-dashboard.tls.certresolver=le"
             - "traefik.http.routers.crowdsec-dashboard.tls=true"
-            - "traefik.http.routers.crowdsec-dashboard.middlewares=authelia@docker"
+            - "traefik.http.routers.crowdsec-dashboard.middlewares=authelia@docker,geoblock@file"
             - "traefik.http.services.crowdsec-dashboard.loadbalancer.server.port=3000"
 
     traefik: # https://github.com/traefik/traefik
@@ -139,6 +139,8 @@ services:
             - "--accesslog.filePath=/var/log/traefik/access.log"
             - "--providers.file.filename=/etc/traefik/dynamic-configuration.yaml"
             - "--entryPoints.websecure.http.middlewares=crowdsec-bouncer@file"
+            - "--experimental.plugins.geoblock.modulename=github.com/PascalMinder/geoblock"
+            - "--experimental.plugins.geoblock.version=v0.3.3"
         ports:
             - "80:80"
             - "443:443"
@@ -154,7 +156,7 @@ services:
             - "traefik.http.routers.api.service=api@internal"
             - "traefik.http.routers.api.tls=true"
             - "traefik.http.routers.api.tls.certresolver=le"
-            - "traefik.http.routers.api.middlewares=authelia@docker"
+            - "traefik.http.routers.api.middlewares=authelia@docker,geoblock@file"
         restart: unless-stopped
         networks:
             - traefik
