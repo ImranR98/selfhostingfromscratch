@@ -1,17 +1,16 @@
 services:
 
-    watchtower: # https://github.com/containrrr/watchtower
+    watchtower: # https://github.com/Foxite/nicholas-fedor-watchtower
         container_name: watchtower
         privileged: true
         restart: unless-stopped
-        image: containrrr/watchtower
+        image: nickfedor/watchtower
         environment:
             WATCHTOWER_CLEANUP: "true"
             WATCHTOWER_POLL_INTERVAL: 7200
         volumes:
             - /var/run/docker.sock:/var/run/docker.sock
-        # OUTDATED: https://github.com/containrrr/watchtower/issues/2067
-        # POSSIBLE ALTERNATIVE: https://github.com/mag37/dockcheck
+        # Note: Original Watchtower unmaintained (https://github.com/containrrr/watchtower/issues/2067), this is a fork
 
     frpc: # https://github.com/fatedier/frp
         image: fatedier/frpc:v0.65.0
