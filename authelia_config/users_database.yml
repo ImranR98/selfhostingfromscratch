@@ -1,0 +1,8 @@
+users:
+  admin:
+    disabled: false
+    displayname: "Admin"
+    password: "$argon2id$v=19$m=65536,t=3,p=4$JhBeqYrylaX/0+y3F4j1Ow$E48HpwTxF1qdUeRufRp5wCR1Hg/nh1mYohm0pSr4lBo" # docker run -it authelia/authelia:latest authelia crypto hash generate argon2
+    email: contact@imranr.dev
+    groups:
+      - admins

@@ -1,0 +1,45 @@
+jwt_secret: o1F3utPMgWDabE2QiJCfpmWGLpct+82L1FDAl5EbLKg=
+
+log:
+  level: debug
+
+totp:
+  issuer: imranr.cloud
+
+authentication_backend:
+  file:
+    path: /config/users_database.yml
+
+access_control:
+  rules:
+    - domain: files.imranr.cloud
+      resources:
+      - '^/share([/?].*)?$'
+      - '^/static([/?].*)?$'
+      - '^/api/public([/?].*)?$'
+      policy: bypass
+    - domain: '*.imranr.cloud'
+      policy: two_factor
+
+session:
+  secret: NKKxihcGtg7+L4KBOgZ5EkQ+lTbSanRD2h7fyG1kwmU=
+  cookies:
+    - domain: imranr.cloud
+      authelia_url: https://auth.imranr.cloud
+  redis:
+    host: authelia-db
+    port: 6379
+
+regulation:
+  max_retries: 3
+  find_time: 120
+  ban_time: 300
+
+storage:
+  encryption_key: 'W51AIX8vy6HngZeH96ZtN05dBrLrF7sLLJxgQWEbnsQ='
+  local:
+    path: /config/db.sqlite3
+
+notifier:
+  filesystem:
+    filename: /config/notification.txt

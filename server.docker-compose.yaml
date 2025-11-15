@@ -23,9 +23,48 @@ services:
             - "com.centurylinklabs.watchtower.enable=false"
         command: "-c /frpc.toml"
 
+    authelia: # https://github.com/authelia/authelia
+        image: authelia/authelia
+        container_name: authelia
+        user: "1000:1000"
+        depends_on:
+            - authelia-db
+        volumes:
+            - ./authelia_config:/config
+        networks:
+            - traefik
+        labels:
+            - "traefik.enable=true"
+            - "traefik.http.routers.authelia.rule=Host(`auth.imranr.cloud`)"
+            - "traefik.http.routers.authelia.entryPoints=websecure"
+            - "traefik.http.routers.authelia.tls.certresolver=le"
+            - "traefik.http.routers.authelia.tls=true"
+            - "traefik.http.middlewares.authelia.forwardAuth.address=http://authelia:9091/api/verify?rd=https%3A%2F%2Fauth.imranr.cloud%2F"
+            - "traefik.http.middlewares.authelia.forwardAuth.trustForwardHeader=true"
+            - "traefik.http.middlewares.authelia.forwardAuth.authResponseHeaders=Remote-User,Remote-Groups,Remote-Name,Remote-Email"
+            - "traefik.http.middlewares.authelia-basic.forwardAuth.address=http://authelia:9091/api/verify?auth=basic"
+            - "traefik.http.middlewares.authelia-basic.forwardAuth.trustForwardHeader=true"
+            - "traefik.http.middlewares.authelia-basic.forwardAuth.authResponseHeaders=Remote-User,Remote-Groups,Remote-Name,Remote-Email"
+        expose:
+            - 9091
+        restart: unless-stopped
+    authelia-db:
+        image: redis:alpine
+        container_name: authelia-db
+        user: "1000:1000"
+        volumes:
+            - authelia_db:/data
+        networks:
+            - traefik
+        expose:
+            - 6379
+        restart: unless-stopped
+
     traefik: # https://github.com/traefik/traefik
         image: traefik:latest
         container_name: traefik
+        depends_on:
+            - authelia
         command:
             - "--api=true"
             - "--api.dashboard=true"
@@ -59,6 +98,7 @@ services:
             - "traefik.http.routers.api.service=api@internal"
             - "traefik.http.routers.api.tls=true"
             - "traefik.http.routers.api.tls.certresolver=le"
+            - "traefik.http.routers.api.middlewares=authelia@docker"
         restart: unless-stopped
         networks:
             - traefik
@@ -82,10 +122,12 @@ services:
             - "traefik.http.routers.filebrowser.tls=true"
             - "traefik.http.services.filebrowser.loadbalancer.server.port=80"
             - "traefik.http.routers.filebrowser.tls.certresolver=le"
+            - "traefik.http.routers.filebrowser.middlewares=authelia@docker"
 
 volumes:
     filebrowser_db:
     traefik_acme:
+    authelia_db:
 
 networks:
     traefik:
